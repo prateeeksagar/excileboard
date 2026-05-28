@@ -1,73 +1,42 @@
-# React + TypeScript + Vite
+# Whiteboard App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple whiteboard application built with **React**, **TypeScript**, and **Fabric.js**.  
+This project focuses on building a scalable architecture for an editor-like canvas system (similar to tools like Excalidraw).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Features (Current)
 
-## React Compiler
+- Fabric.js canvas integration
+- Full-screen responsive canvas
+- Zoom in / Zoom out support
+- Percentage-based zoom system
+- Canvas manager architecture (OOP-based)
+- Modular design for future scalability
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🧠 Architecture
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The project is structured to simulate a real-world editor system.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Core Layers
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Canvas Layer**
+  - Handles Fabric.js initialization
+  - Rendering logic
+  - Zoom and viewport management
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Managers Layer**
+  - CanvasManager
+  - ZoomManager (planned)
+  - HistoryManager (planned)
+  - ToolManager (planned)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **UI Layer**
+  - Canvas controls (zoom, undo/redo, etc.)
+  - Editor toolbar (planned)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📁 Folder Structure (Simplified)
