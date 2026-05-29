@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/button";
 import { useRootStore } from "../../store/RootStore";
 import WhiteBoard from "./canvas/components/WhiteBoard";
 import ViewPortControls from "./ui/ViewPortControls";
+import ToolbarMenu from "./ui/ToolbarMenu";
 
 function ExcileDraw() {
     const { rootStore } = useRootStore();
@@ -15,6 +16,9 @@ function ExcileDraw() {
                     Add Rectangle
                 </Button>
                 <ViewPortControls/>
+            </div>
+            <div className="flex flex-row gap-2 absolute top-8 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <ToolbarMenu/>
             </div>
         </div>
     );

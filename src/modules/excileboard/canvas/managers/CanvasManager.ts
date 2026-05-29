@@ -2,17 +2,20 @@ import { Canvas, Rect, type TPointerEventInfo } from "fabric";
 import { makeAutoObservable } from "mobx";
 import { CanvasZoomManager } from "./CanvasZoomManager";
 import { CanvasPanningManager } from "./CanvasPanningManager";
+import type { RootStore } from "@/store/RootStore";
 
 export class CanvasManager {
   canvas: Canvas | null = null;
   zoomManager: CanvasZoomManager;
   panningManager: CanvasPanningManager;
+  readonly root:RootStore
 
-  constructor() {
+  constructor(root: RootStore) {
+    this.root = root;
     const getCanvas = () => this.canvas;
     this.zoomManager = new CanvasZoomManager(getCanvas);
     this.panningManager = new CanvasPanningManager(getCanvas);
-    makeAutoObservable(this);
+    makeAutoObservable(this, { root: false });
   }
 
   private handleWheel = (opt: TPointerEventInfo<WheelEvent>) => {
@@ -30,7 +33,7 @@ export class CanvasManager {
   init(canvasElement: HTMLCanvasElement) {
     this.canvas?.dispose();
     this.canvas = new Canvas(canvasElement, {
-      backgroundColor: "#C4E2F5",
+      backgroundColor: "#FFFFFF",
     });
     this.canvas.on("mouse:wheel", this.handleWheel);
     this.canvas.renderAll();

@@ -1,11 +1,15 @@
 import { makeAutoObservable } from "mobx";
 import { CanvasManager } from "../modules/excileboard/canvas/managers/CanvasManager";
+import { ToolManager } from "@/modules/excileboard/tools/managers/ToolManager";
 
-class RootStore {
+
+export class RootStore {
   canvasManager: CanvasManager;
+  toolManager: ToolManager;
 
   constructor() {
-    this.canvasManager = new CanvasManager();
+    this.canvasManager = new CanvasManager(this);
+    this.toolManager = new ToolManager(this);
     makeAutoObservable(this);
   }
 }

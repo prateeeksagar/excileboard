@@ -14,7 +14,7 @@ function ZoomControls() {
         <ButtonGroup>
             <Button variant="outline" onClick={() => zoom.zoomOut()}>-</Button>
             <ButtonGroupSeparator/>
-            <ButtonGroupText>{zoom.getZoomPercent()}%</ButtonGroupText>
+            <ButtonGroupText>{Math.trunc(zoom.getZoomPercent())}%</ButtonGroupText>
             <Button variant="outline" onClick={() => zoom.zoomIn()}>+</Button>
         </ButtonGroup>
     )

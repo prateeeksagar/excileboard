@@ -68,7 +68,7 @@ export class CanvasZoomManager {
         // TODO: once CanvasPanningManager is implemented, route plain wheel
         // (no ctrlKey) to panning and reserve ctrl/pinch for zoom.
         let zoom = canvas.getZoom();
-        zoom *= 0.999 ** e.deltaY;
+        zoom *= 0.99 ** e.deltaY;
 
         // viewportPoint is in canvas-pixel space, which is what zoomToPoint expects.
         const point = opt.viewportPoint ?? canvas.getViewportPoint(e);
