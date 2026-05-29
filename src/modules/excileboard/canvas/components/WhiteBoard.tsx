@@ -11,6 +11,7 @@ function WhiteBoard() {
   useEffect(() => {
     if (!canvasRef.current) return;
     canvasManager.init(canvasRef.current);
+    return () => canvasManager.dispose();
   }, []);
 
   return (

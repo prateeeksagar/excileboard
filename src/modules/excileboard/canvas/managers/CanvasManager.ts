@@ -1,4 +1,4 @@
-import { Canvas, Rect } from "fabric";
+import { Canvas, Rect, type TPointerEventInfo } from "fabric";
 import { makeAutoObservable } from "mobx";
 import { CanvasZoomManager } from "./CanvasZoomManager";
 import { CanvasPanningManager } from "./CanvasPanningManager";
@@ -15,12 +15,30 @@ export class CanvasManager {
     makeAutoObservable(this);
   }
 
+  private handleWheel = (opt: TPointerEventInfo<WheelEvent>) => {
+    opt.e.preventDefault();
+    opt.e.stopPropagation();
+    if(opt.e.ctrlKey) {
+      // pinch (trackpad) or ctrl+wheel => zoom
+      this.zoomManager.onWheelZoom(opt);
+    } else {
+      //plain wheel / two finger scroll => pan
+      this.panningManager.onWheelPan(opt);
+    }
+  };
+
   init(canvasElement: HTMLCanvasElement) {
     this.canvas?.dispose();
     this.canvas = new Canvas(canvasElement, {
       backgroundColor: "#C4E2F5",
     });
+    this.canvas.on("mouse:wheel", this.handleWheel);
     this.canvas.renderAll();
+  }
+
+  dispose() {
+    this.canvas?.dispose();
+    this.canvas = null;
   }
 
   addRectangle() {
@@ -31,7 +49,7 @@ export class CanvasManager {
       top: 100,
       width: 120,
       height: 80,
-      fill: "#FFFFFF",
+      fill: "transparent",
       stroke: "#2563eb",
       strokeWidth: 1,
     });
