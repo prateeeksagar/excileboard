@@ -1,13 +1,15 @@
 import { Canvas, Rect, type TPointerEventInfo } from "fabric";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, reaction } from "mobx";
 import { CanvasZoomManager } from "./CanvasZoomManager";
 import { CanvasPanningManager } from "./CanvasPanningManager";
 import type { RootStore } from "@/store/RootStore";
+import { FabricSyncManager } from "./FabricSyncManager";
 
 export class CanvasManager {
   canvas: Canvas | null = null;
   zoomManager: CanvasZoomManager;
   panningManager: CanvasPanningManager;
+  fabricSyncManager: FabricSyncManager;
   readonly root:RootStore
 
   constructor(root: RootStore) {
@@ -15,6 +17,7 @@ export class CanvasManager {
     const getCanvas = () => this.canvas;
     this.zoomManager = new CanvasZoomManager(getCanvas);
     this.panningManager = new CanvasPanningManager(getCanvas);
+    this.fabricSyncManager = new FabricSyncManager(this.root)
     makeAutoObservable(this, { root: false });
   }
 
@@ -36,8 +39,48 @@ export class CanvasManager {
       backgroundColor: "#FFFFFF",
     });
     this.canvas.on("mouse:wheel", this.handleWheel);
+    this.canvas.on("mouse:down", (opt) => {
+      const p = this.canvas!.getScenePoint(opt.e);
+      this.root.toolManager.onPointerDown(p.x, p.y)
+    });
+    this.canvas.on("mouse:up", () => {
+      this.root.toolManager.onPointerUp();
+    })
+    this.canvas.on("mouse:move", (opt) => {
+      const p = this.canvas!.getScenePoint(opt.e);
+      this.root.toolManager.onPointerMove(p.x, p.y)
+    })
     this.canvas.renderAll();
+
+    reaction(
+      () => this.root.toolManager.activeTool,
+      (tool) => {
+        if (!this.canvas) return;
+          const drawing = tool !== "hand";          // "hand" = your select/idle tool
+          this.canvas.selection = !drawing;
+          this.canvas.defaultCursor = drawing ? "crosshair" : "default";
+          this.canvas.forEachObject((o) => {
+            o.selectable = !drawing;
+            o.evented = !drawing;
+          });
+          this.canvas.requestRenderAll();
+      },
+      { fireImmediately: true }
+    )
+
+    this.fabricSyncManager.start();
   }
+
+  // toCanvasCoords(e: React.PointerEvent) : { x: number, y: number } {
+  //   if(!this.canvas) return { x: e.clientX, y: e.clientY };
+
+  //    const point = this.canvas.getScenePoint(new MouseEvent("mousemove", {
+  //     clientX: e.clientX,
+  //     clientY: e.clientY,
+  //   }));
+
+  //   return { x: point.x, y: point.y };
+  // }
 
   dispose() {
     this.canvas?.dispose();
