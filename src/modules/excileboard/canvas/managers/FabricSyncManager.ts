@@ -1,7 +1,8 @@
 import type { RootStore } from "@/store/RootStore";
-import { Ellipse, Rect, type FabricObject, Polygon } from "fabric";
+import { Ellipse, Rect, type FabricObject, Polygon, Polyline, Path } from "fabric";
 import { makeAutoObservable, reaction, type IReactionDisposer } from "mobx";
 import type { BaseElementManager } from "../../elements/managers/BaseElementManager";
+import { DrawElementManager } from "../../elements/managers/DrawElementManager";
 
 export class FabricSyncManager {
 
@@ -26,6 +27,7 @@ export class FabricSyncManager {
         // write Fabric edits (move/resize/rotate) back into the element models,
         // otherwise the model goes stale and the next sync snaps the shape back.
         this.root.canvasManager.canvas?.on("object:modified", this.handleObjectModified);
+        this.root.canvasManager.canvas?.on("path:created", this.handlePathCreated);
     }
 
     private handleObjectModified = (opt: { target?: FabricObject }) => {
@@ -51,6 +53,22 @@ export class FabricSyncManager {
             angle: obj.angle ?? el.angle,
         } as Partial<BaseElementManager>);
     };
+
+    private handlePathCreated = (opt: { path?: FabricObject }) => {
+        const path = opt.path as Path | undefined;
+        const canvas = this.root.canvasManager.canvas;
+        if (!path || !canvas) return;
+
+        canvas.remove(path);   // sync will recreate it from the model
+
+        const el = new DrawElementManager(path.left ?? 0, path.top ?? 0, path.width ?? 0, path.height ?? 0, {
+            strokeColor: (path.stroke as string) ?? "#000000",
+            strokeWidth: path.strokeWidth ?? 2,
+        });
+        el.pathData = path.path as unknown[];   // the captured commands (absolute coords)
+        this.root.elementManager.add(el);
+    };
+
 
     private sync() {
         const canvas = this.root.canvasManager.canvas;
@@ -94,18 +112,9 @@ export class FabricSyncManager {
                 fillColor: el.fillColor,
                 opacity: el.opacity,
             }),
-            (props) => {
-                fabricObj.set({
-                    left:    props.x,
-                    top:     props.y,
-                    width:   props.width,
-                    height:  props.height,
-                    stroke:  props.strokeColor,
-                    fill:    props.fillColor,
-                    opacity: props.opacity,
-                });
-                fabricObj.setCoords();
-                this.root.canvasManager.canvas?.renderAll()
+            () => {
+                this.applyToFabric(el, fabricObj);
+                this.root.canvasManager.canvas?.requestRenderAll();
             }
         )
         this.elementDisposers.set(el.id, d);
@@ -115,37 +124,69 @@ export class FabricSyncManager {
         // Interactive only when not in a drawing tool; the tool reaction in
         // CanvasManager re-toggles this for all objects whenever the tool changes.
         const interactive = this.root.toolManager.activeTool === "hand";
-        const base = {
-        left:        el.x,
-        top:         el.y,
-        width:       el.width,
-        height:      el.height,
-        stroke:      el.strokeColor,
-        fill:        el.fillColor,
-        strokeWidth: el.strokeWidth,
-        opacity:     el.opacity,
-        selectable:  interactive,
-        evented:     interactive,
-        };
+        const common = { selectable: interactive, evented: interactive };
 
+        let obj: FabricObject;
         switch (el.type) {
-        case "rectangle": return new Rect({ ...base });
-        case "circle":    return new Ellipse({ ...base, rx: el.width / 2, ry: el.height / 2 });
-        case "diamond":   return this.createDiamond(base);
+        case "rectangle": obj = new Rect(common); break;
+        case "circle":    obj = new Ellipse(common); break;
+        case "diamond":   obj = new Polygon(this.diamondPoints(el.width, el.height), common); break;
+        case "line":      obj = new Polyline(this.linePoints(el.width, el.height), common);break; 
+        case "draw":      obj = new Path((el as DrawElementManager).pathData as any, common); break;
         default:          return null;
         }
+
+        this.applyToFabric(el, obj);
+        return obj;
     }
 
-    private createDiamond(base: any): FabricObject {
-        // Fabric doesn't have a diamond — use Polygon
-        const { left, top, width, height } = base;
-        const points = [
-        { x: width / 2, y: 0 },
-        { x: width,     y: height / 2 },
-        { x: width / 2, y: height },
-        { x: 0,         y: height / 2 },
+    private diamondPoints(width: number, height: number) {
+        return [
+            { x: width / 2, y: 0 },
+            { x: width,     y: height / 2 },
+            { x: width / 2, y: height },
+            { x: 0,         y: height / 2 },
         ];
-        return new Polygon(points, { ...base });
+    }
+
+    private linePoints(width: number, height: number) : {x:number, y:number}[] {
+        return [
+        { x: 0, y: 0 },
+        { x: width, y: height },
+    ];
+    }
+
+    // Single source of truth for pushing an element model onto its fabric object.
+    // Geometry is shape-aware: Polygon rebuilds points, Ellipse uses rx/ry, Rect uses width/height.
+    private applyToFabric(el: BaseElementManager, obj: FabricObject) {
+        obj.set({
+            stroke:      el.strokeColor,
+            fill:        el.fillColor,
+            strokeWidth: el.strokeWidth,
+            opacity:     el.opacity,
+        });
+
+        if (obj instanceof Polyline) {        // covers Polyline (line) AND Polygon (diamond)
+            const points = el.type === "line"
+                ? this.linePoints(el.width, el.height)
+                : this.diamondPoints(el.width, el.height);
+            obj.set({ points });
+            obj.setDimensions();              // recompute bbox/pathOffset from the new points
+        } else if (obj instanceof Ellipse) {
+            obj.set({ rx: el.width / 2, ry: el.height / 2 });
+        } else {
+            obj.set({ width: el.width, height: el.height });
+        }
+
+        // handles drawing
+        if (el.type === "draw") {
+            obj.set({ stroke: el.strokeColor, strokeWidth: el.strokeWidth, opacity: el.opacity, fill: "" });
+            obj.setCoords();
+            return;
+        }
+
+        obj.set({ left: el.x, top: el.y });   // position last (Polygon dims recalc can shift origin)
+        obj.setCoords();
     }
 
     stop() {

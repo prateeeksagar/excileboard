@@ -1,5 +1,5 @@
 
-export type ElementType = "rectangle" | "circle" | "diamond" | "text" | "arrow" | "image";
+export type ElementType = "rectangle" | "circle" | "diamond" | "text" | "arrow" | "image" | "line" | "draw";
 
 export type strokStyleType = "solid" | "dashed" | "dotted";
 

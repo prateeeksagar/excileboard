@@ -10,7 +10,8 @@ const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     circle: "circle",
     arrow: "arrow",
     diamond: "diamond",
-    text: "text"
+    text: "text",
+    line: "line"
 };
 
 

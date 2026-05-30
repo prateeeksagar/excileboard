@@ -1,4 +1,4 @@
-import { Canvas, Rect, type TPointerEventInfo } from "fabric";
+import { Canvas, PencilBrush, Rect, type TPointerEventInfo } from "fabric";
 import { makeAutoObservable, reaction } from "mobx";
 import { CanvasZoomManager } from "./CanvasZoomManager";
 import { CanvasPanningManager } from "./CanvasPanningManager";
@@ -56,7 +56,17 @@ export class CanvasManager {
       () => this.root.toolManager.activeTool,
       (tool) => {
         if (!this.canvas) return;
-          const drawing = tool !== "hand";          // "hand" = your select/idle tool
+          const pencil = tool == "pencil";
+          const drawing = tool !== "hand"; // "hand" = your select/idle tool
+          
+          this.canvas.isDrawingMode = pencil;
+          if(pencil) {
+            const brush = new PencilBrush(this.canvas);
+            brush.color = '#000000'; // todo:later from stylemanager
+            brush.width = 2;
+            this.canvas.freeDrawingBrush = brush;
+          }
+          
           this.canvas.selection = !drawing;
           this.canvas.defaultCursor = drawing ? "crosshair" : "default";
           this.canvas.forEachObject((o) => {
@@ -70,17 +80,6 @@ export class CanvasManager {
 
     this.fabricSyncManager.start();
   }
-
-  // toCanvasCoords(e: React.PointerEvent) : { x: number, y: number } {
-  //   if(!this.canvas) return { x: e.clientX, y: e.clientY };
-
-  //    const point = this.canvas.getScenePoint(new MouseEvent("mousemove", {
-  //     clientX: e.clientX,
-  //     clientY: e.clientY,
-  //   }));
-
-  //   return { x: point.x, y: point.y };
-  // }
 
   dispose() {
     this.canvas?.dispose();
