@@ -1,9 +1,10 @@
-import { Canvas, PencilBrush, Rect, type TPointerEventInfo } from "fabric";
+import { Canvas, FabricObject, PencilBrush, Rect, Textbox, type TPointerEventInfo } from "fabric";
 import { makeAutoObservable, reaction } from "mobx";
 import { CanvasZoomManager } from "./CanvasZoomManager";
 import { CanvasPanningManager } from "./CanvasPanningManager";
 import type { RootStore } from "@/store/RootStore";
 import { FabricSyncManager } from "./FabricSyncManager";
+import { TextElementManager } from "../../elements/managers/TextElementManager";
 
 export class CanvasManager {
   canvas: Canvas | null = null;
@@ -39,10 +40,7 @@ export class CanvasManager {
       backgroundColor: "#FFFFFF",
     });
     this.canvas.on("mouse:wheel", this.handleWheel);
-    this.canvas.on("mouse:down", (opt) => {
-      const p = this.canvas!.getScenePoint(opt.e);
-      this.root.toolManager.onPointerDown(p.x, p.y)
-    });
+    this.canvas.on("mouse:down", this.handleMouseDown);
     this.canvas.on("mouse:up", () => {
       this.root.toolManager.onPointerUp();
     })
@@ -50,7 +48,8 @@ export class CanvasManager {
       const p = this.canvas!.getScenePoint(opt.e);
       this.root.toolManager.onPointerMove(p.x, p.y)
     })
-    this.canvas.renderAll();
+    this.canvas?.on("text:changed", this.handleTextChanged);
+    this.canvas?.on("text:editing:exited", this.handleTextChanged);
 
     reaction(
       () => this.root.toolManager.activeTool,
@@ -79,7 +78,22 @@ export class CanvasManager {
     )
 
     this.fabricSyncManager.start();
+    this.canvas.renderAll();
+
   }
+
+  private handleMouseDown = (opt: TPointerEventInfo<MouseEvent | TouchEvent>) => {
+      const p = this.canvas!.getScenePoint(opt.e);
+      this.root.toolManager.onPointerDown(p.x, p.y)
+  }
+
+  private handleTextChanged = (opt: { target?: FabricObject }) => {
+    const obj = opt.target as Textbox | undefined;
+    const id = (obj as FabricObject & { elementId?: string })?.elementId;
+    const el = id ? this.root.elementManager.get(id) : undefined;
+    if (!el || !(el instanceof TextElementManager) || !obj) return;
+    el.update({ text: obj.text } as Partial<TextElementManager>);
+  };
 
   dispose() {
     this.canvas?.dispose();

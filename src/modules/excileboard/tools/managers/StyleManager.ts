@@ -5,7 +5,7 @@ export class StyleManager {
     // defaults for next element
     strokeColor: string = "#000000";
     fillColor:string = "transparent";
-    strokeWidth:number = 2;
+    strokeWidth:number = 1;
     strokeStyle: "solid" | "dashed" | "dotted" = "solid";
     opacity:number = 1;
     fontSize: number = 16;

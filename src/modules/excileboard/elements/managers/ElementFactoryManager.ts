@@ -5,13 +5,15 @@ import { DiamonElementManager } from "./DiamondElementManager";
 import { DrawElementManager } from "./DrawElementManager";
 import { LineElementManager } from "./LineElementManager";
 import { RectangleElementManager } from "./RectangleElementManager";
+import { TextElementManager } from "./TextElementManager";
 
 const REGISTRY: Partial<Record<ElementType, ElementCtor>> = {
     rectangle: RectangleElementManager,
     diamond: DiamonElementManager,
     circle: CircleElementManager,
     line: LineElementManager,
-    draw: DrawElementManager
+    draw: DrawElementManager,
+    text: TextElementManager,
 }
 
 type ElementCtor = new (x: number, y: number, w:number, h: number, style: ElementStyle) => BaseElementManager;

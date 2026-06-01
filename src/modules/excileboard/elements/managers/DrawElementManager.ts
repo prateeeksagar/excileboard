@@ -1,12 +1,12 @@
 import { BaseElementManager, type ElementStyle } from "./BaseElementManager";
-import { makeObservable } from "mobx";
+import { makeObservable, observable } from "mobx";
 
 export class DrawElementManager extends BaseElementManager {
     readonly type = "draw" as const;
-
+    pathData: unknown[] = []; //fabric path command array
     constructor(x: number, y:number, width:number, height: number, style: ElementStyle = {})  {
         super(x,y,width, height, style);
-        makeObservable(this)
+        makeObservable(this, { pathData : observable })
     }
 
     toJSON() {

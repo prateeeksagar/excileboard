@@ -4,6 +4,7 @@ import type { ToolType } from "../../types/tools";
 import type { ElementType } from "../../types/element";
 import type { BaseElementManager } from "../../elements/managers/BaseElementManager";
 import { ElementFactoryManager } from "../../elements/managers/ElementFactoryManager";
+import type { TextElementManager } from "../../elements/managers/TextElementManager";
 
 const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     rectangle: "rectangle",
@@ -11,7 +12,8 @@ const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     arrow: "arrow",
     diamond: "diamond",
     text: "text",
-    line: "line"
+    line: "line",
+    pencil: "draw"
 };
 
 
@@ -34,9 +36,20 @@ export class ToolManager {
 
 
   onPointerDown(x:number, y:number) {
+    console.log("pointer down caleed")
     const elementType = TOOL_TO_ELEMENT[this.activeTool];
     if (!elementType) return;                 // hand / eraser / pencil handled elsewhere
 
+    if (elementType === "text") {
+      const el = ElementFactoryManager.create("text", x, y, 0, 0, {});
+      this.root.elementManager.add(el);
+
+      // ✅ Element owns editing state — NOT FabricSyncManager
+      (el as TextElementManager).enterTextEditing();
+      this.setActiveTool("hand");
+      return;
+    } 
+    
     this.startX = x;
     this.startY = y;
     this.draft = ElementFactoryManager.create(elementType, x, y, 0, 0, {});
@@ -44,7 +57,7 @@ export class ToolManager {
   }
 
   onPointerMove(x: number, y:number) {
-
+    console.log("pointer move")
     if (!this.draft) return;
 
     this.draft.update({
@@ -56,6 +69,7 @@ export class ToolManager {
   }
 
   onPointerUp() {
+    console.log("pointer up")
     if (!this.draft) return;
     // discard zero-size accidental clicks
     if (this.draft.width < 2 && this.draft.height < 2) {
