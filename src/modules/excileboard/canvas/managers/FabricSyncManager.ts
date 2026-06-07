@@ -1,9 +1,12 @@
 import type { RootStore } from "@/store/RootStore";
-import { Ellipse, Rect, type FabricObject, Polygon, Polyline, Path, Textbox, FabricText, IText } from "fabric";
+import { Ellipse, FabricObject, Rect, Polygon, Polyline, Path, Textbox, FabricText, IText, Point } from "fabric";
 import { makeAutoObservable, reaction, type IReactionDisposer } from "mobx";
 import type { BaseElementManager } from "../../elements/managers/BaseElementManager";
 import { DrawElementManager } from "../../elements/managers/DrawElementManager";
 import type { TextElementManager } from "../../elements/managers/TextElementManager";
+import type { ArrowElementManager } from "../../elements/managers/ArrowElementManager";
+import { InteractiveFabricObject } from "fabric";  // ✅ correct import
+
 
 export class FabricSyncManager {
 
@@ -18,12 +21,17 @@ export class FabricSyncManager {
     }
 
     start() {
+
+        this.applyGlobalFabricDefaults();
+
         //react to element list changes
         this.disposeReaction = reaction(
             () => Array.from(this.root.elementManager.elements.values()).map(el => el.id),
             () => this.sync(),
             {fireImmediately: true}
         )
+
+        // this.applyGlobalFabricDefaults();
 
         // write Fabric edits (move/resize/rotate) back into the element models,
         // otherwise the model goes stale and the next sync snaps the shape back.
@@ -73,7 +81,7 @@ export class FabricSyncManager {
     };
 
     private handleTextChanged = (opt: { target?: FabricObject }) => {
-        const obj = opt.target as IText | undefined;
+        const obj = opt.target as Textbox | undefined;
         const id = (obj as (FabricObject & { elementId?: string }) | undefined)?.elementId;
         const el = id ? this.root.elementManager.get(id) : undefined;
         if (!obj || !el || el.type !== "text") return;
@@ -166,7 +174,12 @@ export class FabricSyncManager {
             this.watchTextElement(textEl, fabricObj);
             return;
         }
-        
+
+        if (el.type === "arrow") {
+            this.watchArrowElement(el as ArrowElementManager, fabricObj);
+            return;
+        }
+
         const d = reaction(
             () => ({
                 x: el.x, y: el.y,
@@ -185,7 +198,7 @@ export class FabricSyncManager {
 
     private watchTextElement(el: TextElementManager, fabricObj: FabricObject) {
         const canvas = this.root.canvasManager.canvas;
-        const textbox = fabricObj as IText;
+        const textbox = fabricObj as Textbox;
 
         const d = reaction(
             () => el.isEditing,
@@ -219,6 +232,30 @@ export class FabricSyncManager {
         this.elementDisposers.set(el.id, d);
     }
 
+    // Re-render the arrow whenever its own endpoints OR any bound element's geometry changes.
+    // MobX tracks every observable read in the data fn, so reading the bound elements' x/y/w/h
+    // makes the arrow follow them when they move/resize.
+    private watchArrowElement(el: ArrowElementManager, fabricObj: FabricObject) {
+        const d = reaction(
+            () => {
+                const s = el.startBindingId ? this.root.elementManager.get(el.startBindingId) : null;
+                const e = el.endBindingId ? this.root.elementManager.get(el.endBindingId) : null;
+                return {
+                    x1: el.x1, y1: el.y1, x2: el.x2, y2: el.y2,
+                    sId: el.startBindingId, eId: el.endBindingId,
+                    sx: s?.x, sy: s?.y, sw: s?.width, sh: s?.height,
+                    ex: e?.x, ey: e?.y, ew: e?.width, eh: e?.height,
+                    stroke: el.strokeColor, strokeWidth: el.strokeWidth, opacity: el.opacity,
+                };
+            },
+            () => {
+                this.applyToFabric(el, fabricObj);
+                this.root.canvasManager.canvas?.requestRenderAll();
+            },
+        );
+        this.elementDisposers.set(el.id, d);
+    }
+
     private createFabricObject(el: BaseElementManager): FabricObject | null {
         // Interactive only when not in a drawing tool; the tool reaction in
         // CanvasManager re-toggles this for all objects whenever the tool changes.
@@ -229,9 +266,10 @@ export class FabricSyncManager {
         case "rectangle": obj = new Rect(common); break;
         case "circle":    obj = new Ellipse(common); break;
         case "diamond":   obj = new Polygon(this.diamondPoints(el.width, el.height), common); break;
-        case "line":      obj = new Polyline(this.linePoints(el.width, el.height), common);break; 
+        case "line":      obj = new Polyline(this.linePoints(el.width, el.height), common);break;
+        case "arrow":     obj = new Polyline(this.arrowPoints(...this.resolveArrowEndpoints(el as ArrowElementManager)), { ...common, fill: "" }); break;
         case "draw":      obj = new Path((el as DrawElementManager).pathData as any, common); break;
-        case "text":      obj = new IText((el as TextElementManager).text, common);break;
+        case "text":      obj = new Textbox((el as TextElementManager).text, common);break;
         default:          return null;
         }
 
@@ -253,6 +291,9 @@ export class FabricSyncManager {
             // splitByGrapheme:false → wrap at spaces (word wrap); lockScalingY → resize controls width, not font
             const textCommon = { originX: "left", originY: "top", splitByGrapheme: false, breakWords: false, lockScalingY: true, width: 20, minWidth: 10 }
             common = { ...common, ...textCommon }
+        } else if(el.type == "arrow") {
+            const arrowCommon = { hasBorders: false, strokeWidth: Math.max(el.strokeWidth, 4), strokeLineCap:      "round", strokeLineJoin:     "round", perPixelTargetFind: true }
+            common = { ...common, ...arrowCommon }
         }
 
         return common;
@@ -261,7 +302,7 @@ export class FabricSyncManager {
     beginEdit(id: string) {
         const obj = this.fabricMap.get(id);
         const canvas = this.root.canvasManager.canvas;
-        if (!(obj instanceof IText) || !canvas) return;
+        if (!(obj instanceof Textbox) || !canvas) return;
         canvas.setActiveObject(obj);
         obj.enterEditing();
         obj.selectAll();
@@ -282,6 +323,65 @@ export class FabricSyncManager {
         { x: 0, y: 0 },
         { x: width, y: height },
     ];
+    }
+
+    // A single open polyline that draws the shaft plus two arrowhead barbs:
+    // start → tip → barbL → tip → barbR. Points are in ABSOLUTE scene coordinates.
+    private arrowPoints(x1: number, y1: number, x2: number, y2: number): {x:number, y:number}[] {
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        const head = 14;                 // barb length
+        const spread = Math.PI / 7;      // barb angle from the shaft
+        const bx1 = x2 - head * Math.cos(angle - spread);
+        const by1 = y2 - head * Math.sin(angle - spread);
+        const bx2 = x2 - head * Math.cos(angle + spread);
+        const by2 = y2 - head * Math.sin(angle + spread);
+        return [
+            { x: x1, y: y1 }, { x: x2, y: y2 },   // shaft
+            { x: bx1, y: by1 }, { x: x2, y: y2 }, // tip → barb L → back to tip
+            { x: bx2, y: by2 },                   // tip → barb R
+        ];
+    }
+
+    // Resolve an arrow's drawn endpoints, snapping any bound end to the bound element's edge.
+    // Uses the live fabric object's geometry (origin-independent) rather than the model's x/y.
+    private resolveArrowEndpoints(a: ArrowElementManager): [number, number, number, number] {
+        let { x1, y1, x2, y2 } = a;
+        const startObj = a.startBindingId ? this.fabricMap.get(a.startBindingId) : undefined;
+        const endObj   = a.endBindingId ? this.fabricMap.get(a.endBindingId) : undefined;
+        // each end points toward the OTHER end's current position
+        if (startObj) [x1, y1] = this.edgePoint(startObj, x2, y2);
+        if (endObj)   [x2, y2] = this.edgePoint(endObj, x1, y1);
+        return [x1, y1, x2, y2];
+    }
+
+    // Point on a fabric object's bounding-box border, along the ray from its center toward (tx,ty).
+    private edgePoint(obj: FabricObject, tx: number, ty: number): [number, number] {
+        const c = obj.getCenterPoint();                 // absolute (scene) center
+        const hw = obj.getScaledWidth() / 2;
+        const hh = obj.getScaledHeight() / 2;
+        const dx = tx - c.x;
+        const dy = ty - c.y;
+        if ((dx === 0 && dy === 0) || hw === 0 || hh === 0) return [c.x, c.y];
+        const t = Math.min(hw / Math.abs(dx), hh / Math.abs(dy));   // ray→box intersection
+        return [c.x + dx * t, c.y + dy * t];
+    }
+
+    // Top-most element id under a scene point. Skips arrows (don't bind arrows to arrows)
+    // and an optional excluded id (the arrow being drawn). Used by the arrow tool for binding.
+    elementIdAt(x: number, y: number, excludeId?: string): string | null {
+        const canvas = this.root.canvasManager.canvas;
+        if (!canvas) return null;
+        const point = new Point(x, y);
+        const objects = canvas.getObjects();
+        for (let i = objects.length - 1; i >= 0; i--) {
+            const obj = objects[i];
+            const id = (obj as FabricObject & { elementId?: string }).elementId;
+            if (!id || id === excludeId) continue;
+            const target = this.root.elementManager.get(id);
+            if (!target || target.type === "arrow") continue;
+            if (obj.containsPoint(point)) return id;
+        }
+        return null;
     }
 
     // Single source of truth for pushing an element model onto its fabric object.
@@ -307,6 +407,15 @@ export class FabricSyncManager {
                 // auto-grow → fit content; fixed (after manual resize) → wrap to el.width
                 ...(t.autoWidth ? {} : { width: el.width }),
             });
+            obj.setCoords();
+            return;
+        }
+
+        // Arrow: absolute-coordinate polyline (shaft + head), endpoints resolved against bindings.
+        if (el.type === "arrow") {
+            const [x1, y1, x2, y2] = this.resolveArrowEndpoints(el as ArrowElementManager);
+            obj.set({ points: this.arrowPoints(x1, y1, x2, y2), stroke: el.strokeColor, strokeWidth: el.strokeWidth, fill: "" });
+            (obj as Polyline).setBoundingBox(true);   // re-anchor to the absolute points
             obj.setCoords();
             return;
         }
@@ -345,5 +454,40 @@ export class FabricSyncManager {
         // this.root.canvasManager.canvas?.off("text:changed", this.handleTextChanged);
         this.fabricMap.clear();
     }
+
+    // applyGlobalFabricDefaults() {
+    //     let obj = FabricObject
+    //     obj = FabricObject = {
+    //         borderColor:        "#6965db",   // excalidraw purple
+    //         borderDashArray:    [4, 3],      // dashed border
+    //         borderScaleFactor:  1.5,         // border thickness
+    //         cornerColor:        "#ffffff",
+    //         cornerStrokeColor:  "#6965db",
+    //         cornerStyle:        "circle",
+    //         cornerSize:         10,
+    //         padding:            8,
+    //         transparentCorners: false,       // filled handles
+    //     }
+    // }
+
+    /*
+    Fabric JS Default configuration controllers 
+    function is used to change fabric defaults
+    */
+    applyGlobalFabricDefaults() {
+    // InteractiveFabricObject — controls selection handles and borders
+    InteractiveFabricObject.ownDefaults = {
+        ...InteractiveFabricObject.ownDefaults,
+        borderColor:        "#00A190",
+        borderDashArray:    [4, 3],
+        borderScaleFactor:  1.5,
+        cornerColor:        "#ffffff",
+        cornerStrokeColor:  "#00A190",
+        cornerStyle:        "circle",
+        cornerSize:         10,
+        padding:            8,
+        transparentCorners: false,
+    };
+}
 
 }

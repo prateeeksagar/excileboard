@@ -5,7 +5,7 @@ import { CanvasPanningManager } from "./CanvasPanningManager";
 import type { RootStore } from "@/store/RootStore";
 import { FabricSyncManager } from "./FabricSyncManager";
 import { TextElementManager } from "../../elements/managers/TextElementManager";
-
+import { getCircleEraserCursor } from "../../tools/components/ErasorCursor";;
 export class CanvasManager {
   canvas: Canvas | null = null;
   zoomManager: CanvasZoomManager;
@@ -57,7 +57,8 @@ export class CanvasManager {
         if (!this.canvas) return;
           const pencil = tool == "pencil";
           const drawing = tool !== "hand"; // "hand" = your select/idle tool
-          
+          const erasor = tool === "eraser";
+
           this.canvas.isDrawingMode = pencil;
           if(pencil) {
             const brush = new PencilBrush(this.canvas);
@@ -65,9 +66,12 @@ export class CanvasManager {
             brush.width = 2;
             this.canvas.freeDrawingBrush = brush;
           }
-          
+
           this.canvas.selection = !drawing;
-          this.canvas.defaultCursor = drawing ? "crosshair" : "default";
+          // eraser cursor must win over the generic crosshair (eraser is also a "drawing" tool)
+          const eraserCursor = getCircleEraserCursor(20);
+          this.canvas.defaultCursor = erasor ? eraserCursor : drawing ? "crosshair" : "default";
+          this.canvas.hoverCursor = erasor ? eraserCursor : "move";
           this.canvas.forEachObject((o) => {
             o.selectable = !drawing;
             o.evented = !drawing;
