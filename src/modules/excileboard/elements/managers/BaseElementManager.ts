@@ -8,11 +8,12 @@ export interface ElementStyle {
   strokeWidth?: number;
   strokeStyle?: "solid" | "dashed" | "dotted";
   opacity?: number;
+  
 }
 
 // Default fallbacks — if nothing passed
 const DEFAULT_STYLE: Required<ElementStyle> = {
-  strokeColor: "#000000",
+  strokeColor: "#1e1e1e",
   fillColor: "transparent",
   strokeWidth: 2,
   strokeStyle: "solid",

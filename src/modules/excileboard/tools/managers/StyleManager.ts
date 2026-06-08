@@ -1,17 +1,20 @@
 import { action, makeObservable, observable } from "mobx";
-import type { BaseElement } from "../../types/element";
+import type { RootStore } from "@/store/RootStore";
+import type { BaseElementManager } from "../../elements/managers/BaseElementManager";
 
 export class StyleManager {
     // defaults for next element
-    strokeColor: string = "#000000";
+    strokeColor: string = "#1e1e1e";
     fillColor:string = "transparent";
     strokeWidth:number = 1;
     strokeStyle: "solid" | "dashed" | "dotted" = "solid";
     opacity:number = 1;
     fontSize: number = 16;
     fontFamily = "sans-serif";
+    root: RootStore
 
-    constructor() {
+    constructor(root: RootStore) {
+        this.root = root;
         makeObservable(this, {
             strokeColor: observable,
             fillColor: observable,
@@ -23,7 +26,8 @@ export class StyleManager {
         });
     }
 
-    applyFromElement(el: BaseElement) {
+    applyFromElement(el: BaseElementManager) {
+        if(!el) return
         // when user selects an element then sync with existing element
         this.strokeColor = el.strokeColor;
         this.fillColor = el.fillColor;
@@ -35,6 +39,19 @@ export class StyleManager {
     updateStyle<K extends keyof this>(key: K, value: this[K]) {
         // When user changes a property in sidebar
         this[key] = value;
+    }
+
+    setStrokeColor(color: string) {
+        console.log("stroke", color);
+        this.strokeColor = color;
+        this.updateSelected({ strokeColor: color })
+    }
+
+    private updateSelected(updates: Partial<BaseElementManager>) {
+        this.root.selectionManager.selectedIds.forEach(id => {
+        this.root.elementManager.get(id)?.update(updates);
+        });
+        console.log(this.root.selectionManager.selectedIds)
     }
 
     get currentDefaults() {

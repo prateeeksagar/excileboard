@@ -37,7 +37,6 @@ export class ToolManager {
 
 
   onPointerDown(x:number, y:number) {
-    console.log("pointer down caleed")
 
     // Eraser: delete whatever the cursor is over, and keep deleting while dragging.
     if (this.activeTool === "eraser") {
@@ -50,7 +49,7 @@ export class ToolManager {
     if (!elementType) return;                 // hand / eraser / pencil handled elsewhere
 
     if (elementType === "text") {
-      const el = ElementFactoryManager.create("text", x, y, 0, 0, {});
+      const el = ElementFactoryManager.create("text", x, y, 0, 0, this.root.styleManager.currentDefaults) as TextElementManager;
       this.root.elementManager.add(el);
 
       // ✅ Element owns editing state — NOT FabricSyncManager
@@ -62,7 +61,7 @@ export class ToolManager {
     if (elementType === "arrow") {
       this.startX = x;
       this.startY = y;
-      const arrow = ElementFactoryManager.create("arrow", x, y, 0, 0, {}) as ArrowElementManager;
+      const arrow = ElementFactoryManager.create("arrow", x, y, 0, 0, this.root.styleManager.currentDefaults) as ArrowElementManager;
       // bind the start to whatever shape is under the click (if any)
       arrow.setStartBinding(this.root.canvasManager.fabricSyncManager.elementIdAt(x, y));
       this.draft = arrow;
@@ -72,7 +71,7 @@ export class ToolManager {
 
     this.startX = x;
     this.startY = y;
-    this.draft = ElementFactoryManager.create(elementType, x, y, 0, 0, {});
+    this.draft = ElementFactoryManager.create(elementType, x, y, 0, 0, this.root.styleManager.currentDefaults);
     this.root.elementManager.add(this.draft);       // observable collection; sync layer draws it
   }
 

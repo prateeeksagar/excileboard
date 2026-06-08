@@ -12,7 +12,7 @@ export class FabricSyncManager {
 
     private disposeReaction: IReactionDisposer | null = null;
     private fabricMap = new Map<string, FabricObject>();
-    private elementDisposers = new Map<string, IReactionDisposer>();
+    private elementDisposers = new Map<string, () => void>();   // reaction disposer (or composite of several)
     root: RootStore;
 
     constructor(root: RootStore) {
@@ -39,7 +39,30 @@ export class FabricSyncManager {
         this.root.canvasManager.canvas?.on("path:created", this.handlePathCreated);
         this.root.canvasManager.canvas?.on("text:changed", this.handleTextChanged)
         // auto-grow a text box's wi dth to fit content while typing (Excalidraw-style)
+
+        // Sync Fabric selection → SelectionManager
+        this.root.canvasManager.canvas?.on("selection:created",  this.handleSelectionCreated);
+        this.root.canvasManager.canvas?.on("selection:updated",  this.handleSelectionCreated); // same handler
+        this.root.canvasManager.canvas?.on("selection:cleared",  this.handleSelectionCleared);
+
     }
+
+    private handleSelectionCreated = (opt: { selected?: FabricObject[] }) => {
+        const selected = opt.selected ?? [];
+
+        // Get ids from selected Fabric objects
+        const ids = selected
+            .map(obj => (obj as FabricObject & { elementId?: string }).elementId)
+            .filter(Boolean) as string[];
+
+        // ✅ Sync to SelectionManager
+        this.root.selectionManager.setSelectedIds(ids);
+    };
+
+    private handleSelectionCleared = () => {
+        // ✅ Clear selection
+        this.root.selectionManager.clearSelection();
+    };
 
     private handleObjectModified = (opt: { target?: FabricObject }) => {
         console.log('handle object modified');
@@ -180,20 +203,37 @@ export class FabricSyncManager {
             return;
         }
 
-        const d = reaction(
-            () => ({
-                x: el.x, y: el.y,
-                width: el.width, height: el.height,
-                strokeColor: el.strokeColor,
-                fillColor: el.fillColor,
-                opacity: el.opacity,
-            }),
+        // Geometry: re-position / re-size only when x/y/width/height change.
+        const dGeom = reaction(
+            () => ({ x: el.x, y: el.y, width: el.width, height: el.height }),
             () => {
                 this.applyToFabric(el, fabricObj);
                 this.root.canvasManager.canvas?.requestRenderAll();
             }
-        )
-        this.elementDisposers.set(el.id, d);
+        );
+
+        // Style: stroke/fill/opacity only — must NOT touch geometry, or the object drifts
+        // (re-running left/top + setCoords/setDimensions nudges it) on a pure color change.
+        const dStyle = reaction(
+            () => ({ strokeColor: el.strokeColor, fillColor: el.fillColor, strokeWidth: el.strokeWidth, opacity: el.opacity }),
+            () => {
+                this.applyStyle(el, fabricObj);
+                this.root.canvasManager.canvas?.requestRenderAll();
+            }
+        );
+
+        this.elementDisposers.set(el.id, () => { dGeom(); dStyle(); });
+    }
+
+    // Apply only visual style (no geometry) so style changes never move the object.
+    private applyStyle(el: BaseElementManager, obj: FabricObject) {
+        obj.set({
+            stroke:      el.strokeColor,
+            // open shapes (pencil/arrow) must stay unfilled
+            fill:        (el.type === "draw" || el.type === "arrow") ? "" : el.fillColor,
+            strokeWidth: el.strokeWidth,
+            opacity:     el.opacity,
+        });
     }
 
     private watchTextElement(el: TextElementManager, fabricObj: FabricObject) {
@@ -282,7 +322,7 @@ export class FabricSyncManager {
         // CanvasManager re-toggles this for all objects whenever the tool changes.
         const interactive = this.root.toolManager.activeTool == "hand";
         
-        let common = { selectable: interactive, evented: interactive }
+        let common = {  selectable: interactive, evented: interactive }
 
         if(el.type == "text") {
             // originX/Y "left"/"top": Fabric's default origin is CENTER, which makes an
