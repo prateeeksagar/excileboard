@@ -42,14 +42,10 @@ export const COLOR_PALETTE: ColorPalette = {
 
 function StrokeSelector() {
   const { rootStore } = useRootStore();
-  const { styleManager, selectionManager } = rootStore;
+  const { styleManager } = rootStore;
 
   const handleStrokeSelection = (color: string) => {
-    if (selectionManager.hasSelection) {
       styleManager.setStrokeColor(color);
-    } else {
-      styleManager.updateStyle("strokeColor", color);
-    }
   };
 
   return (

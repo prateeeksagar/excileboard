@@ -47,14 +47,10 @@ export const COLOR_PALETTE: ColorPalette = {
 
 function BackgroundFillSelector() {
   const { rootStore } = useRootStore();
-  const { styleManager, selectionManager } = rootStore;
+  const { styleManager } = rootStore;
 
   const handleBackgroundSelection = (color: string) => {
-    if (selectionManager.hasSelection) {
-      styleManager.setFillColor(color);
-    } else {
-      styleManager.updateStyle("fillColor", color);
-    }
+    styleManager.setFillColor(color);
   };
 
   return (
