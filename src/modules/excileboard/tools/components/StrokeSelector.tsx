@@ -67,8 +67,8 @@ function StrokeSelector() {
 
 
     return (
-        <div className="flex flex-col gap-1 items-center justify-center">
-            <span className="text-xs ">Stroke</span>
+        <div className="flex flex-col gap-2 items-start justify-start p-1">
+            <span className="text-xs text-start w-full">Stroke</span>
             <div className="flex flex-row gap-2">
                 <div className="flex flex-row gap-0.5">
                     {InstantColorOptions.map(color => (
