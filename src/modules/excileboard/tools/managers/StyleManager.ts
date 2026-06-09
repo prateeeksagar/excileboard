@@ -42,9 +42,13 @@ export class StyleManager {
     }
 
     setStrokeColor(color: string) {
-        console.log("stroke", color);
         this.strokeColor = color;
         this.updateSelected({ strokeColor: color })
+    }
+
+    setFillColor(color: string) {
+        this.fillColor = color;
+        this.updateSelected({ fillColor: color });
     }
 
     private updateSelected(updates: Partial<BaseElementManager>) {

@@ -10,11 +10,16 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  getTransparentShadeStyle,
+  getTransparentShadeClass,
+} from "@/utils/style";
 import type { ColorPalette } from "../../types/style";
-import { getTransparentShadeClass, getTransparentShadeStyle } from "@/utils/style";
+
+
 
 const InstantColorOptions = [
-  "#1e1e1e",
+  "transparent",
   "#e03131",
   "#2f9e44",
   "#1971c2",
@@ -40,21 +45,21 @@ export const COLOR_PALETTE: ColorPalette = {
   orange: ["#FFF3E5", "#FFD9B3", "#FFBF80", "#FFA64D", "#FF8000"],
 };
 
-function StrokeSelector() {
+function BackgroundFillSelector() {
   const { rootStore } = useRootStore();
   const { styleManager, selectionManager } = rootStore;
 
-  const handleStrokeSelection = (color: string) => {
+  const handleBackgroundSelection = (color: string) => {
     if (selectionManager.hasSelection) {
-      styleManager.setStrokeColor(color);
+      styleManager.setFillColor(color);
     } else {
-      styleManager.updateStyle("strokeColor", color);
+      styleManager.updateStyle("fillColor", color);
     }
   };
 
   return (
     <div className="flex flex-col gap-2 items-start justify-start p-1">
-      <span className="text-xs text-start w-full">Stroke</span>
+      <span className="text-xs text-start w-full">Background</span>
       <div className="flex flex-row gap-2">
         <div className="flex flex-row gap-0.5">
           {InstantColorOptions.map((color) => (
@@ -62,12 +67,12 @@ function StrokeSelector() {
               key={color}
               size={"icon-sm"}
               style={getTransparentShadeStyle(color)}
-            className={cn(
-                color == styleManager.strokeColor &&
-                "ring ring-primary ring-offset-1",
+              className={cn(
+                color == styleManager.fillColor &&
+                  "ring ring-primary ring-offset-1",
                 getTransparentShadeClass(color),
-            )}
-              onClick={() => handleStrokeSelection(color)}
+              )}
+              onClick={() => handleBackgroundSelection(color)}
             ></Button>
           ))}
         </div>
@@ -77,8 +82,8 @@ function StrokeSelector() {
           <PopoverTrigger asChild>
             <Button
               size={"icon-sm"}
-              style={getTransparentShadeStyle(styleManager.strokeColor)}
-              className={cn(getTransparentShadeClass(styleManager.strokeColor))}
+              style={getTransparentShadeStyle(styleManager.fillColor)}
+              className={cn(getTransparentShadeClass(styleManager.fillColor))}
             ></Button>
           </PopoverTrigger>
           <PopoverContent
@@ -98,11 +103,11 @@ function StrokeSelector() {
                         size={"icon-sm"}
                         style={getTransparentShadeStyle(shade)}
                         className={cn(
-                          shade == styleManager.strokeColor &&
+                          shade == styleManager.fillColor &&
                             "ring ring-primary ring-offset-1",
                           getTransparentShadeClass(shade),
                         )}
-                        onClick={() => handleStrokeSelection(shade)}
+                        onClick={() => handleBackgroundSelection(shade)}
                       ></Button>
                     ))}
                   </div>
@@ -116,4 +121,4 @@ function StrokeSelector() {
   );
 }
 
-export default observer(StrokeSelector);
+export default observer(BackgroundFillSelector);
