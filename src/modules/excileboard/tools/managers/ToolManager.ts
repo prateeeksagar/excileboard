@@ -76,7 +76,6 @@ export class ToolManager {
   }
 
   onPointerMove(x: number, y:number) {
-    console.log("pointer move")
 
     if (this.activeTool === "eraser") {
       this.root.eraserManager.eraseAtPoint(x, y);   // no-ops unless a drag is in progress
@@ -100,7 +99,6 @@ export class ToolManager {
   }
 
   onPointerUp() {
-    console.log("pointer up")
 
     if (this.activeTool === "eraser") {
       this.root.eraserManager.stopErasing();   // stay on the eraser tool (Excalidraw keeps it active)

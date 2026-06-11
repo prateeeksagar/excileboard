@@ -19,3 +19,5 @@ export type ColorName =
   | "transparent";
 
 export type ColorPalette = Record<ColorName, ColorShades>
+
+export type StrokeStyle = "solid" | "dashed" | "dotted";

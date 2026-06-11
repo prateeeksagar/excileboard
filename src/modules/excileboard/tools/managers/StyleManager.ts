@@ -1,13 +1,14 @@
-import { action, makeObservable, observable } from "mobx";
+import { makeObservable, observable } from "mobx";
 import type { RootStore } from "@/store/RootStore";
 import type { BaseElementManager } from "../../elements/managers/BaseElementManager";
+import type { StrokeStyle } from "../../types/style";
 
 export class StyleManager {
     // defaults for next element
     strokeColor: string = "#1e1e1e";
     fillColor:string = "transparent";
-    strokeWidth:number = 1;
-    strokeStyle: "solid" | "dashed" | "dotted" = "solid";
+    strokeWidth:number = 2;
+    strokeStyle: StrokeStyle = "solid";
     opacity:number = 1;
     fontSize: number = 16;
     fontFamily = "sans-serif";
@@ -51,11 +52,20 @@ export class StyleManager {
         this.updateSelected({ fillColor: color });
     }
 
+    setStrokeWidth(width: number) {
+        this.strokeWidth = width;
+        this.updateSelected({ strokeWidth : width });
+    }
+
+    setStrokStyle(style: StrokeStyle) {
+        this.strokeStyle = style;
+        this.updateSelected({ strokeStyle: style })
+    }
+
     private updateSelected(updates: Partial<BaseElementManager>) {
         this.root.selectionManager.selectedIds.forEach(id => {
         this.root.elementManager.get(id)?.update(updates);
         });
-        console.log(this.root.selectionManager.selectedIds)
     }
 
     get currentDefaults() {
