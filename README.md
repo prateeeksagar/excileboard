@@ -8,7 +8,7 @@ This project focuses on building a scalable architecture for an editor-like canv
 ## 🚀 Features (Current)
 
 - Fabric.js canvas integration
-- Full-screen responsive canvas
+- Infinite-screen responsive canvas
 - Zoom in / Zoom out support
 - Percentage-based zoom system
 - Canvas manager architecture (OOP-based)
@@ -26,16 +26,6 @@ The project is structured to simulate a real-world editor system.
   - Handles Fabric.js initialization
   - Rendering logic
   - Zoom and viewport management
-
-- **Managers Layer**
-  - CanvasManager
-  - ZoomManager (planned)
-  - HistoryManager (planned)
-  - ToolManager (planned)
-
-- **UI Layer**
-  - Canvas controls (zoom, undo/redo, etc.)
-  - Editor toolbar (planned)
 
 ---
 
