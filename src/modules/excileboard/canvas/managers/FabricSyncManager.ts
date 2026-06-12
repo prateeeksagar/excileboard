@@ -321,36 +321,54 @@ export class FabricSyncManager {
     const canvas = this.root.canvasManager.canvas;
     const textbox = fabricObj as Textbox;
 
-    const d = reaction(
-      () => el.isEditing,
-      (isEditing) => {
-        if (!isEditing) return;
-
-        textbox.set({ selectable: true, evented: true });
-        canvas?.setActiveObject(textbox);
-
-        // defer so the Textbox is mounted/rendered before entering edit mode
-        setTimeout(() => {
-          textbox.enterEditing();
-          textbox.selectAll(); // type to replace; harmless when empty
-          canvas?.requestRenderAll();
-        }, 0);
-
-        textbox.once("editing:exited", () => {
-          el.exitTextEditing(textbox.text ?? "");
-          if (el.isEmpty) {
-            // sync() removes the fabric object AND disposes this reaction
-            this.root.elementManager.removeById(el.id);
-          }
-          this.root.toolManager.setActiveTool("hand");
-          canvas?.requestRenderAll();
-        });
-      },
-      { fireImmediately: true }, // isEditing is already true by the time we get here
+    // ✅ Reaction 1 — style changes (fontSize, fontFamily, etc.)
+    const styleDisposer = reaction(
+        () => ({
+            fontSize:    el.fontSize,
+            fontFamily:  el.fontFamily,
+            strokeColor: el.strokeColor,
+            opacity:     el.opacity,
+            textAlign: el.textAlign
+        }),
+        () => {
+            this.applyToFabric(el, fabricObj);
+            canvas?.requestRenderAll();
+        }
     );
 
-    this.elementDisposers.set(el.id, d);
-  }
+    // ✅ Reaction 2 — editing state only
+    const editingDisposer = reaction(
+        () => el.isEditing,
+        (isEditing) => {
+            if (!isEditing) return;
+
+            textbox.set({ selectable: true, evented: true });
+            canvas?.setActiveObject(textbox);
+
+            setTimeout(() => {
+                textbox.enterEditing();
+                textbox.selectAll();
+                canvas?.requestRenderAll();
+            }, 0);
+
+            textbox.once("editing:exited", () => {
+                el.exitTextEditing(textbox.text ?? "");
+                if (el.isEmpty) {
+                    this.root.elementManager.removeById(el.id);
+                }
+                this.root.toolManager.setActiveTool("hand");
+                canvas?.requestRenderAll();
+            });
+        },
+        { fireImmediately: true }
+    );
+
+    // ✅ Combine both disposers
+    this.elementDisposers.set(el.id, () => {
+        styleDisposer();
+        editingDisposer();
+    });
+}
 
   // Re-render the arrow whenever its own endpoints OR any bound element's geometry changes.
   // MobX tracks every observable read in the data fn, so reading the bound elements' x/y/w/h
@@ -494,6 +512,9 @@ export class FabricSyncManager {
       lockScalingY: true,
       width: 20,
       minWidth: 10,
+      fontSize: el.fontSize,
+      FontFamily: el.fontFamily,
+      textAlign: el.textAlign
     };
   }
 
@@ -691,8 +712,10 @@ private offsetTowards(
         fill: el.strokeColor || "#000000", // glyph color
         left: el.x,
         top: el.y,
+        strokeWidth: 0, // default for text
         // auto-grow → fit content; fixed (after manual resize) → wrap to el.width
         ...(t.autoWidth ? {} : { width: el.width }),
+        textAlign: el.textAlign
       });
       obj.setCoords();
       return;

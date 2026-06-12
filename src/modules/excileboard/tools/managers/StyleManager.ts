@@ -10,9 +10,10 @@ export class StyleManager {
     strokeWidth:number = 2;
     strokeStyle: StrokeStyle = "solid";
     opacity:number = 1;
-    fontSize: number = 16;
-    fontFamily = "sans-serif";
+    fontSize: number = 20;
+    fontFamily = "Excalifont, sans-serif";
     cornorRadius:number = 0;
+    textAlign: "left" | "right" | "center" = "left"
     root: RootStore
     
 
@@ -26,7 +27,8 @@ export class StyleManager {
             opacity: observable,
             fontFamily: observable,
             fontSize: observable,
-            cornorRadius: observable
+            cornorRadius: observable,
+            textAlign: observable
         });
     }
 
@@ -75,6 +77,21 @@ export class StyleManager {
         this.updateSelected({ opacity: opacity });
     }
 
+    setFontSize(size: number) {
+        this.fontSize = size;
+        this.updateSelected({ fontSize: size } as Partial<BaseElementManager>)
+    }
+
+    setFontFamily(font: string) {
+        this.fontFamily = font;
+        this.updateSelected({ fontFamily: font})
+    }
+
+    setTextAlign(align: "left" | "right" | "center") {
+        this.textAlign = align;
+        this.updateSelected({ textAlign : align})
+    }
+
     private updateSelected(updates: Partial<BaseElementManager>) {
         this.root.selectionManager.selectedIds.forEach(id => {
         this.root.elementManager.get(id)?.update(updates);
@@ -88,7 +105,10 @@ export class StyleManager {
         strokeWidth: this.strokeWidth,
         strokeStyle: this.strokeStyle,
         opacity: this.opacity,
-        cornorRadius: this.cornorRadius
+        cornorRadius: this.cornorRadius,
+        fontFamily: this.fontFamily,
+        fontSize: this.fontSize,
+        textAlign: this.textAlign
         };
     }
 }

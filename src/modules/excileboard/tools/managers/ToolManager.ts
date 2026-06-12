@@ -28,6 +28,7 @@ export interface SidebarControlsTools {
   showFontFamily:   boolean;
   showOpacity:      boolean;
   isHandActive: boolean;
+  showTextAlign: boolean
 }
 
 
@@ -151,7 +152,7 @@ export class ToolManager {
       return {
         showStroke: false, showBackground: false, showStrokeWidth: false,
         showStrokeStyle: false, showEdges: false, showFontSize: false,
-        showFontFamily: false, showOpacity: false, isHandActive: true
+        showFontFamily: false, showOpacity: false, isHandActive: true, showTextAlign: false
       };
     }
 
@@ -164,7 +165,8 @@ export class ToolManager {
         showFontSize:    type === "text",
         showFontFamily:  type === "text",
         showOpacity:     true,  // always show
-        isHandActive: false
+        isHandActive: false,
+        showTextAlign: type === "text"
     }
   }
 

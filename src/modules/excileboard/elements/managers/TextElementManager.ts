@@ -4,8 +4,6 @@ import { BaseElementManager, type ElementStyle } from "./BaseElementManager"
 export class TextElementManager extends BaseElementManager {
     readonly type = "text" as const;
     text: string = "";   // empty → blinking cursor on create (Excalidraw-style); removed on exit if untouched
-    fontFamily: string = "sans-serif";
-    fontSize: number = 20;
     isEditing:boolean = false;
     autoWidth:boolean = true;
 
@@ -13,8 +11,6 @@ export class TextElementManager extends BaseElementManager {
         super(x, y, width, height, styles);
         makeObservable(this, {
             text: observable,
-            fontSize: observable,
-            fontFamily: observable,
             isEditing: observable,
             autoWidth: observable
         })

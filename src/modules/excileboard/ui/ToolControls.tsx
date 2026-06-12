@@ -7,6 +7,9 @@ import StrokeStyleSelector from "../tools/components/StrokeStyleSelector";
 import CornorRadiusSelector from "../tools/components/CornorRadiusSelector";
 import OpacitySelector from "../tools/components/OpacitySelector";
 import { useRootStore } from "@/store/RootStore";
+import FontSizeSelector from "../tools/components/FontSizeSelector";
+import FontFamilySelector from "../tools/components/FontFamilySelector";
+import TextAlignSelector from "../tools/components/TextAlignSelector";
 
 function ToolControls() {
   const { rootStore } = useRootStore();
@@ -21,6 +24,9 @@ function ToolControls() {
           {sidebarAccess.showStrokeStyle && <StrokeStyleSelector />}
           {sidebarAccess.showEdges && <CornorRadiusSelector />}
           {sidebarAccess.showOpacity && <OpacitySelector />}
+          {sidebarAccess.showFontSize && <FontSizeSelector/>}
+          {sidebarAccess.showFontFamily && <FontFamilySelector/>}
+          {sidebarAccess.showTextAlign && <TextAlignSelector/>}
         </ScrollArea>
       ) : null}
     </>
