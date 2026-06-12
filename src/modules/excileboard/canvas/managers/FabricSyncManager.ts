@@ -3,7 +3,6 @@ import {
   Ellipse,
   FabricObject,
   Rect,
-  Polygon,
   Polyline,
   Path,
   Textbox,

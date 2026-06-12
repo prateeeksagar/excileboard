@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { useRootStore } from "@/store/RootStore";
-import { Minus, Square, SquareRoundCorner } from "lucide-react";
+import { Square, SquareRoundCorner } from "lucide-react";
 import { observer } from "mobx-react-lite";
 
 const RADIUS: {label: string, radius:number, icon:React.FC<{ size?: number }> }[] = [

@@ -1,6 +1,8 @@
 import './App.css'
 import { BrowserRouter, Route, Routes } from 'react-router'
-import ExcileDraw from './modules/excileboard/ExcileBoard';
+import { lazy } from 'react';
+
+const WhiteboardPage = lazy(() => import("./modules/excileboard/ExcileBoard"));
 
 function App() {
   return (
@@ -8,7 +10,7 @@ function App() {
       <Routes>
         <Route
           path="/board"
-          element={<ExcileDraw />}
+          element={<WhiteboardPage />}
         />
       </Routes>
     </BrowserRouter>

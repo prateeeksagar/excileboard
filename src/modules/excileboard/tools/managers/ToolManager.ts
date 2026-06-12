@@ -6,7 +6,6 @@ import type { BaseElementManager } from "../../elements/managers/BaseElementMana
 import { ElementFactoryManager } from "../../elements/managers/ElementFactoryManager";
 import type { TextElementManager } from "../../elements/managers/TextElementManager";
 import type { ArrowElementManager } from "../../elements/managers/ArrowElementManager";
-import { SelectionManager } from "../../selection/SelectionManager";
 
 const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     rectangle: "rectangle",

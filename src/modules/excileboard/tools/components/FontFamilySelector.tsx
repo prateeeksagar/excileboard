@@ -1,14 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { useRootStore } from "@/store/RootStore";
-import type { StrokeStyle } from "../../types/style";
 import { observer } from "mobx-react-lite";
-import {
-  DashedLineIcon,
-  DottedLineIcon,
-  SolidLineIcon,
-} from "@/components/icons";
-import { Type } from "lucide-react";
+
 
 const FONT_FAMILY_OPTIONS = [
   { value: "Excalifont, sans-serif",     type: "normal"    },

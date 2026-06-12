@@ -1,4 +1,4 @@
-import { makeObservable, observable, action } from "mobx";
+import { makeObservable, observable } from "mobx";
 import { nanoid } from "nanoid";
 import type { strokStyleType } from "../../types/element";
 
