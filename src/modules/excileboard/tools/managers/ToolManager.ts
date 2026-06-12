@@ -144,7 +144,7 @@ export class ToolManager {
 
     // determine selected element or selected tool
     const selected = this.root.selectionManager.selectedElements[0];
-    const type = selected ?? this.activeTool ?? null;
+    const type = selected?.type ?? this.activeTool ?? null;
 
     if(!type || type == "hand" || type == "eraser") {
       // hand tool or select tool
@@ -156,7 +156,7 @@ export class ToolManager {
     }
 
     return {
-        showStroke:      type !== "text",
+        showStroke:      true,
         showBackground:  type !== "text" && type !== "line" && type !== "arrow" && type !== "pencil",
         showStrokeWidth: type !== "text",
         showStrokeStyle: type !== "text",
