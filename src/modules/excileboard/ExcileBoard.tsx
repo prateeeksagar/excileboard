@@ -3,6 +3,8 @@ import WhiteBoard from "./canvas/components/WhiteBoard";
 import ViewPortControls from "./ui/ViewPortControls";
 import ToolbarMenu from "./ui/ToolbarMenu";
 import ToolControls from "./ui/ToolControls";
+import { FaGithub } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
 
 function ExcileDraw() {
     return (
@@ -16,6 +18,10 @@ function ExcileDraw() {
             </div>
             <div className="flex flex-row gap-2 absolute top-8 left-1/2 -translate-x-1/2 -translate-y-1/2">
                 <ToolbarMenu/>
+            </div>
+
+            <div className="flex flex-row gap-2 absolute top-8 right-4 -translate-x-1/2 -translate-y-1/2">
+                <a href="https://github.com/prateeeksagar/excileboard" target="_blank" className="cursor-pointer"><Button variant={"outline"} size={"icon-lg"}><FaGithub /></Button></a>
             </div>
         </div>
     );

@@ -1,10 +1,9 @@
-import { makeObservable, observable } from "mobx";
+import { makeObservable } from "mobx";
 import { BaseElementManager, type ElementStyle } from "./BaseElementManager";
 
 export class DiamonElementManager extends BaseElementManager {
 
     readonly type = "diamond" as const;
-
 
     constructor(x:number, y:number, width:number, height: number, style: ElementStyle = {}){
         super(x, y, width, height, style);
