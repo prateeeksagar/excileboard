@@ -24,7 +24,7 @@ function StrokeWidthSelector() {
               onClick={() => handleStrokWidth(val)}
               key={`stroke-${val}`}
               variant={val == styleManager.strokeWidth ? "default" : "outline"}
-              size={"icon-sm"}
+              size={"icon-lg"}
             >
               <Minus strokeWidth={val} />
             </Button>

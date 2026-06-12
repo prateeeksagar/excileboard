@@ -8,6 +8,7 @@ export interface ElementStyle {
   strokeWidth?: number;
   strokeStyle?: "solid" | "dashed" | "dotted";
   opacity?: number;
+  cornorRadius?: number
   
 }
 
@@ -18,6 +19,7 @@ const DEFAULT_STYLE: Required<ElementStyle> = {
   strokeWidth: 2,
   strokeStyle: "solid",
   opacity: 1,
+  cornorRadius: 0
 };
 
 export abstract class BaseElementManager {
@@ -34,6 +36,7 @@ export abstract class BaseElementManager {
     strokeWidth: number;
     strokeStyle: strokStyleType;
     opacity: number;
+    cornorRadius: number
 
     constructor(
         x:number, y:number,
@@ -51,6 +54,7 @@ export abstract class BaseElementManager {
         this.strokeWidth = merged.strokeWidth;
         this.strokeStyle = merged.strokeStyle;
         this.opacity = merged.opacity;
+        this.cornorRadius = merged.cornorRadius;
 
         makeObservable(this, {
             x: observable,
@@ -61,7 +65,9 @@ export abstract class BaseElementManager {
             strokeColor: observable,
             fillColor: observable,
             strokeStyle: observable,
-            strokeWidth: observable
+            strokeWidth: observable,
+            opacity: observable,
+            cornorRadius: observable
         });
 
     }

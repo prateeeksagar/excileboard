@@ -39,7 +39,7 @@ function StrokeStyleSelector() {
               variant={
                 value == styleManager.strokeStyle ? "default" : "outline"
               }
-              size={"icon-sm"}
+              size={"icon-lg"}
             >
               {<Icon size={10} />}
             </Button>

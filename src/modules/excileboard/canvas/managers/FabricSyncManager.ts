@@ -16,6 +16,8 @@ import { DrawElementManager } from "../../elements/managers/DrawElementManager";
 import type { TextElementManager } from "../../elements/managers/TextElementManager";
 import type { ArrowElementManager } from "../../elements/managers/ArrowElementManager";
 import { InteractiveFabricObject } from "fabric";
+import type { RectangleElementManager } from "../../elements/managers/RectangleElementManager";
+import type { DiamonElementManager } from "../../elements/managers/DiamondElementManager";
 
 export class FabricSyncManager {
   private disposeReaction: IReactionDisposer | null = null;
@@ -252,6 +254,7 @@ export class FabricSyncManager {
         strokeWidth: el.strokeWidth,
         opacity: el.opacity,
         strokeStyle: el.strokeStyle,
+        cornorRadius: (el.type == "rectangle" || el.type == "diamond") ? (el as RectangleElementManager | DiamonElementManager).cornorRadius : undefined
       }),
       () => {
         this.applyStyle(el, fabricObj);
@@ -274,7 +277,14 @@ export class FabricSyncManager {
       strokeWidth: el.strokeWidth,
       opacity: el.opacity,
       ...this.getStrokeDashArray(el),
+      ...this.getCornorRadius(el as RectangleElementManager)
     });
+
+    // Diamond uses a Path — corner radius means rebuilding the path data, not rx/ry.
+    if (el.type === "diamond") {
+      const d = el as DiamonElementManager;
+      (obj as any)._setPath(this.buildDiamondPath(el.width, el.height, d.cornorRadius), false);
+    }
   }
 
   private getStrokeDashArray(el: BaseElementManager): object {
@@ -290,6 +300,16 @@ export class FabricSyncManager {
       default:
         return { strokeDashArray: [] }; // ✅ empty = solid
     }
+  }
+
+  private getCornorRadius(el: RectangleElementManager) {
+    if(el.type == "rectangle") {
+      return {
+        rx: (el.cornorRadius) ?? 0,
+        ry: (el.cornorRadius) ?? 0
+      }
+    }
+    return {}
   }
 
   private canHaveStrokeDashArray(el: BaseElementManager): boolean {
@@ -395,7 +415,8 @@ export class FabricSyncManager {
         obj = new Ellipse(common);
         break;
       case "diamond":
-        obj = new Polygon(this.diamondPoints(el.width, el.height), common);
+        const d = el as DiamonElementManager;
+        obj = new Path(this.buildDiamondPath(el.width, el.height, d.cornorRadius), common);
         break;
       case "line":
         obj = new Polyline(this.linePoints(el.width, el.height), common);
@@ -447,7 +468,21 @@ export class FabricSyncManager {
       };
     }
 
+    if(el.type == "rectangle" || el.type == "diamond") {
+      common = {
+        ...common,
+        ...this.commonFabricRectAndDiamondOptions(el as RectangleElementManager | DiamonElementManager)
+      };
+    }
+
     return common;
+  }
+
+  private commonFabricRectAndDiamondOptions(el: RectangleElementManager | DiamonElementManager) {
+    return {
+      rx: (el.cornorRadius) ?? 0,
+      ry: (el.cornorRadius) ?? 0
+    }
   }
 
   private commonFabricTextCreateOptions(el: BaseElementManager) {
@@ -482,14 +517,71 @@ export class FabricSyncManager {
     canvas.requestRenderAll();
   }
 
-  private diamondPoints(width: number, height: number) {
-    return [
-      { x: width / 2, y: 0 },
-      { x: width, y: height / 2 },
-      { x: width / 2, y: height },
-      { x: 0, y: height / 2 },
+  // private diamondPoints(width: number, height: number) {
+  //   return [
+  //     { x: width / 2, y: 0 },
+  //     { x: width, y: height / 2 },
+  //     { x: width / 2, y: height },
+  //     { x: 0, y: height / 2 },
+  //   ];
+  // }
+
+  // utils/diamondPath.ts (or inside FabricSyncManager)
+
+private buildDiamondPath(width: number, height: number, radius: number = 0): string {
+    const points = [
+        { x: width / 2, y: 0 },          // top
+        { x: width,     y: height / 2 }, // right
+        { x: width / 2, y: height },     // bottom
+        { x: 0,         y: height / 2 }, // left
     ];
-  }
+
+    if (radius <= 0) {
+        // Sharp — straight lines between points
+        return `M ${points[0].x} ${points[0].y} ` +
+               `L ${points[1].x} ${points[1].y} ` +
+               `L ${points[2].x} ${points[2].y} ` +
+               `L ${points[3].x} ${points[3].y} Z`;
+    }
+
+    const maxRadius = Math.min(width, height) / 4;
+    const r = Math.min(radius, maxRadius);
+
+    // For each point, get offset points toward prev and next corner
+    const path: string[] = [];
+    const n = points.length;
+
+    for (let i = 0; i < n; i++) {
+        const curr = points[i];
+        const prev = points[(i - 1 + n) % n];
+        const next = points[(i + 1) % n];
+
+        const fromPrev = this.offsetTowards(curr, prev, r);
+        const toNext   = this.offsetTowards(curr, next, r);
+
+        if (i === 0) {
+            path.push(`M ${fromPrev.x} ${fromPrev.y}`);
+        } else {
+            path.push(`L ${fromPrev.x} ${fromPrev.y}`);
+        }
+        path.push(`Q ${curr.x} ${curr.y} ${toNext.x} ${toNext.y}`);
+    }
+
+    path.push("Z");
+    return path.join(" ");
+}
+
+private offsetTowards(
+    from: { x: number; y: number },
+    to:   { x: number; y: number },
+    distance: number
+) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ratio = distance / len;
+    return { x: from.x + dx * ratio, y: from.y + dy * ratio };
+}
 
   private linePoints(
     width: number,
@@ -586,7 +678,8 @@ export class FabricSyncManager {
       strokeWidth: el.strokeWidth,
       opacity: el.opacity,
       ...this.getStrokeDashArray(el),
-    });
+      ...this.getCornorRadius(el as RectangleElementManager)
+    }); 
 
     // Text: auto-sized, colored via `fill` (fillColor is transparent → use strokeColor).
     if (el.type === "text") {
@@ -623,15 +716,20 @@ export class FabricSyncManager {
 
     if (obj instanceof Polyline) {
       // covers Polyline (line) AND Polygon (diamond)
-      const points =
-        el.type === "line"
-          ? this.linePoints(el.width, el.height)
-          : this.diamondPoints(el.width, el.height);
+      const points = this.linePoints(el.width, el.height)
       obj.set({ points });
       obj.setDimensions(); // recompute bbox/pathOffset from the new points
     } else if (obj instanceof Ellipse) {
       obj.set({ rx: el.width / 2, ry: el.height / 2 });
-    } else {
+    } else if(el.type == "diamond") {
+    const d = el as DiamonElementManager;
+    const pathData = this.buildDiamondPath(el.width, el.height, d.cornorRadius);
+    (obj as any)._setPath(pathData, false); // parse path string + recalc bounds, no position adjust
+    obj.set({ left: el.x, top: el.y });
+    obj.setCoords();
+    return;
+    }
+    else {
       obj.set({ width: el.width, height: el.height });
     }
 

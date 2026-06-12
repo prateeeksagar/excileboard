@@ -12,7 +12,9 @@ export class StyleManager {
     opacity:number = 1;
     fontSize: number = 16;
     fontFamily = "sans-serif";
+    cornorRadius:number = 0;
     root: RootStore
+    
 
     constructor(root: RootStore) {
         this.root = root;
@@ -23,7 +25,8 @@ export class StyleManager {
             strokeStyle: observable,
             opacity: observable,
             fontFamily: observable,
-            fontSize: observable
+            fontSize: observable,
+            cornorRadius: observable
         });
     }
 
@@ -62,6 +65,16 @@ export class StyleManager {
         this.updateSelected({ strokeStyle: style })
     }
 
+    setCornorRadius(radius: number) {
+        this.cornorRadius = radius;
+        this.updateSelected({ cornorRadius: radius } as Partial<BaseElementManager>);
+    }
+
+    setOpacity(opacity: number) {
+        this.opacity = opacity;
+        this.updateSelected({ opacity: opacity });
+    }
+
     private updateSelected(updates: Partial<BaseElementManager>) {
         this.root.selectionManager.selectedIds.forEach(id => {
         this.root.elementManager.get(id)?.update(updates);
@@ -75,6 +88,7 @@ export class StyleManager {
         strokeWidth: this.strokeWidth,
         strokeStyle: this.strokeStyle,
         opacity: this.opacity,
+        cornorRadius: this.cornorRadius
         };
     }
 }

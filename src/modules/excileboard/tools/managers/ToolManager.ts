@@ -6,6 +6,7 @@ import type { BaseElementManager } from "../../elements/managers/BaseElementMana
 import { ElementFactoryManager } from "../../elements/managers/ElementFactoryManager";
 import type { TextElementManager } from "../../elements/managers/TextElementManager";
 import type { ArrowElementManager } from "../../elements/managers/ArrowElementManager";
+import { SelectionManager } from "../../selection/SelectionManager";
 
 const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     rectangle: "rectangle",
@@ -16,6 +17,18 @@ const TOOL_TO_ELEMENT: Partial<Record<ToolType, ElementType>> = {
     line: "line",
     pencil: "draw"
 };
+
+export interface SidebarControlsTools {
+  showStroke:       boolean;
+  showBackground:   boolean;
+  showStrokeWidth:  boolean;
+  showStrokeStyle:  boolean;
+  showEdges:        boolean;
+  showFontSize:     boolean;
+  showFontFamily:   boolean;
+  showOpacity:      boolean;
+  isHandActive: boolean;
+}
 
 
 export class ToolManager {
@@ -125,6 +138,34 @@ export class ToolManager {
     }
     this.draft = null;
     this.setActiveTool("hand");   // optional: snap back to select after placing
+  }
+
+  sidebarToolControlAccess():SidebarControlsTools {
+
+    // determine selected element or selected tool
+    const selected = this.root.selectionManager.selectedElements[0];
+    const type = selected ?? this.activeTool ?? null;
+
+    if(!type || type == "hand" || type == "eraser") {
+      // hand tool or select tool
+      return {
+        showStroke: false, showBackground: false, showStrokeWidth: false,
+        showStrokeStyle: false, showEdges: false, showFontSize: false,
+        showFontFamily: false, showOpacity: false, isHandActive: true
+      };
+    }
+
+    return {
+        showStroke:      type !== "text",
+        showBackground:  type !== "text" && type !== "line" && type !== "arrow" && type !== "pencil",
+        showStrokeWidth: type !== "text",
+        showStrokeStyle: type !== "text",
+        showEdges:       type === "rectangle" || type === "diamond",
+        showFontSize:    type === "text",
+        showFontFamily:  type === "text",
+        showOpacity:     true,  // always show
+        isHandActive: false
+    }
   }
 
 }

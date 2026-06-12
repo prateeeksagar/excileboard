@@ -4,16 +4,27 @@ import StrokeSelector from "../tools/components/StrokeSelector";
 import BackgroundFillSelector from "../tools/components/BackgroundFillSelector";
 import StrokWidthSelector from "../tools/components/StrokWidthSelector";
 import StrokeStyleSelector from "../tools/components/StrokeStyleSelector";
+import CornorRadiusSelector from "../tools/components/CornorRadiusSelector";
+import OpacitySelector from "../tools/components/OpacitySelector";
+import { useRootStore } from "@/store/RootStore";
 
 function ToolControls() {
-    return (
+  const { rootStore } = useRootStore();
+  const sidebarAccess = rootStore.toolManager.sidebarToolControlAccess();
+  return (
+    <>
+      {!sidebarAccess.isHandActive ? (
         <ScrollArea className="w-50 h-[80vh] rounded-md border shadow-sm p-2">
-           <StrokeSelector/>
-           <BackgroundFillSelector/>
-           <StrokWidthSelector/>
-           <StrokeStyleSelector/>
+          {sidebarAccess.showStroke && <StrokeSelector />}
+          {sidebarAccess.showBackground && <BackgroundFillSelector />}
+          {sidebarAccess.showStrokeWidth && <StrokWidthSelector />}
+          {sidebarAccess.showStrokeStyle && <StrokeStyleSelector />}
+          {sidebarAccess.showEdges && <CornorRadiusSelector />}
+          {sidebarAccess.showOpacity && <OpacitySelector />}
         </ScrollArea>
-    )
+      ) : null}
+    </>
+  );
 }
 
-export default observer(ToolControls)
+export default observer(ToolControls);
